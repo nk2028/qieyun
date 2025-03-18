@@ -1,0 +1,17 @@
+{
+    "[html]": {
+        "editor.defaultFormatter": "dprint.dprint",
+        "editor.rulers": [
+            120
+        ]
+    },
+    "[css]": {
+        "editor.defaultFormatter": "dprint.dprint"
+    },
+    "[javascript]": {
+        "editor.defaultFormatter": "dprint.dprint",
+        "editor.rulers": [
+            120
+        ]
+    }
+}

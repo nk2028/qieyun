@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width" />
+    <title>Qieyun</title>
+    <script type="module">
+      import {
+        computed,
+        createApp,
+        onMounted,
+        ref,
+      } from 'https://cdn.jsdelivr.net/npm/vue@3/dist/vue.esm-browser.js';
+      import TshetUinh from 'https://esm.run/tshet-uinh@0.16.0-beta.1';
+
+      function keyForEntry(條目) {
+        return `${條目.來源}/${條目.小韻號}/${條目.小韻字號}`;
+      }
+
+      const Entry = {
+        props: ['條目'],
+        // setup(props) {},
+        computed: {
+          showDebug() {
+            return false;
+          },
+        },
+        template: '#template-entry',
+      };
+
+      const App = {
+        components: {
+          Entry,
+        },
+        setup() {
+          const input = ref('');
+          const result = ref([]);
+
+          function doQuery(query) {
+            query = query ?? input.value;
+            input.value = query;
+            const rawResult = TshetUinh.資料.query字頭(query);
+            const expanded = [];
+            const seen = new Set();
+            for (const 條目 of rawResult) {
+              const key = keyForEntry(條目);
+              if (seen.has(key)) {
+                continue;
+              }
+              if (!條目.釋義上下文) {
+                expanded.push(條目);
+                continue;
+              }
+              for (const 上下文條目 of 條目.釋義上下文) {
+                const 展開條目 = { ...條目, ...上下文條目 };
+                seen.add(keyForEntry(展開條目));
+                expanded.push(展開條目);
+              }
+            }
+            result.value = expanded;
+          }
+
+          onMounted(() => doQuery('好'));
+
+          return {
+            input,
+            result,
+            doQuery,
+            keyForEntry,
+          };
+        },
+        template: '#template-app',
+      };
+
+      createApp(App).mount('#app');
+    </script>
+
+    <template id="template-app">
+      <form @submit.prevent="doQuery()">
+        <input type="text" v-model.trim="input" />
+        <input type="submit" value="查詢" />
+      </form>
+      <ul>
+        <li v-for="條目 in result" :key="keyForEntry(條目)">
+          <entry :條目="條目"></entry>
+        </li>
+      </ul>
+    </template>
+
+    <template id="template-entry">
+      <article class="result-item">
+        <p>
+          <span class="headword">{{ 條目.字頭 }}</span>
+          <span class="pronunciation">
+            {{ 條目.音韻地位.描述 }}
+            <template v-if="條目.反切"
+            >{{ 條目.反切 ? (條目.反切 + (條目.來源 === '廣韻' ? '切': '反')) : ''}}</template>
+            <template v-if="條目.直音">音{{ 條目.直音 }}</template>
+          </span>
+        </p>
+        <p>
+          {{ 條目.釋義 ?? '' }}<template v-if="false && 條目.釋義上下文"
+          >（<template v-for="(條目1, i) in 條目.釋義上下文"
+            >{{i ? '／' : ''}}{{條目1.小韻字號 === 條目.小韻字號 ? '～' : `${條目1.字頭}${條目1.釋義 ? '：' :
+              ''}${條目1.釋義 ??''}`}}</template>）</template>
+        </p>
+        <p class="cite">
+          {{條目.來源}} {{條目.韻目}}韻
+        </p>
+        <p v-if="showDebug" style="color: darkgray">{{ 條目 }}</p>
+      </article>
+    </template>
+
+    <style>
+      .result-item {
+        padding: 1em 0;
+      }
+      .result-item p {
+        margin: 0.3em 0;
+      }
+      .result-item .headword {
+        font-size: 2rem;
+        line-height: 0;
+      }
+      .result-item .headword {
+        margin-right: 1.5rem;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app">
+      <div>載入中……</div>
+    </div>
+  </body>
+</html>
