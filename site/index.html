@@ -13,6 +13,8 @@
         ref,
       } from 'https://cdn.jsdelivr.net/npm/vue@3/dist/vue.esm-browser.js';
 
+      const tupaTable = JSON.parse(await (fetch('tupa.json').then(x => x.text())));
+
       function keyForEntry(條目) {
         return `${條目.來源}/${條目.小韻號}/${條目.小韻字號}`;
       }
@@ -23,6 +25,9 @@
         computed: {
           showDebug() {
             return false;
+          },
+          tupaTable() {
+            return tupaTable;
           },
         },
         template: '#template-entry',
@@ -92,7 +97,7 @@
         <p>
           <span class="headword">{{ 條目.字頭 }}</span>
           <span class="pronunciation">
-            {{ 條目.音韻地位.描述 }}
+            {{ 條目.音韻地位.描述 }} {{ tupaTable[條目.音韻地位.描述] }}
             <template v-if="條目.反切"
             >{{ 條目.反切 ? (條目.反切 + (條目.來源 === '廣韻' ? '切': '反')) : ''}}</template>
             <template v-if="條目.直音">音{{ 條目.直音 }}</template>
