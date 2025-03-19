@@ -5,13 +5,13 @@
     <meta name="viewport" content="width=device-width" />
     <title>Qieyun</title>
     <script type="module">
+      import TshetUinh from 'https://cdn.jsdelivr.net/npm/tshet-uinh@0.16.0-beta.2/dist/tshet-uinh.esm.min.js';
       import {
         computed,
         createApp,
         onMounted,
         ref,
       } from 'https://cdn.jsdelivr.net/npm/vue@3/dist/vue.esm-browser.js';
-      import TshetUinh from 'https://esm.run/tshet-uinh@0.16.0-beta.1';
 
       function keyForEntry(條目) {
         return `${條目.來源}/${條目.小韻號}/${條目.小韻字號}`;
