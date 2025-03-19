@@ -95,7 +95,8 @@
     <template id="template-entry">
       <article class="result-item">
         <p>
-          <span class="headword">{{ 條目.字頭 }}</span>
+          <span class="headword">{{ 條目.字頭 }}<span v-if="條目.字頭說明" class="headword-note"
+            >{{ 條目.字頭說明 }}</span></span>
           <span class="pronunciation">
             {{ 條目.音韻地位.描述 }} {{ tupaTable[條目.音韻地位.描述] }}
             <template v-if="條目.反切"
@@ -126,9 +127,10 @@
       .result-item .headword {
         font-size: 2rem;
         line-height: 0;
-      }
-      .result-item .headword {
         margin-right: 1.5rem;
+      }
+      .result-item .headword-note {
+        font-size: 0.75rem;
       }
     </style>
   </head>
