@@ -95,21 +95,15 @@
     <template id="template-entry">
       <article class="result-item">
         <p>
-          <span class="headword">{{ 條目.字頭 }}<span v-if="條目.字頭說明" class="headword-note"
-            >{{ 條目.字頭說明 }}</span></span>
-          <span class="pronunciation">
-            {{ 條目.音韻地位.描述 }} {{ tupaTable[條目.音韻地位.描述] }}
-            <template v-if="條目.反切"
-            >{{ 條目.反切 ? (條目.反切 + (條目.來源 === '廣韻' ? '切': '反')) : ''}}</template>
-            <template v-if="條目.直音">音{{ 條目.直音 }}</template>
-          </span>
+          <span class="headword">{{ 條目.字頭 }}</span>
+          <span class="pronunciation position">{{ 條目.音韻地位.描述 }}</span>
+          <span class="pronunciation tupa">{{ tupaTable[條目.音韻地位.描述] }}</span>
+          <span v-if="條目.反切" class="pronunciation fanqie"
+          >{{ 條目.反切 ? (條目.反切 + (條目.來源 === '廣韻' ? '切': '反')) : ''}}</span>
+          <span v-if="條目.直音" class="pronunciation zhiyin">音{{ 條目.直音 }}</span>
         </p>
-        <p>
-          {{ 條目.釋義 ?? '' }}<template v-if="false && 條目.釋義上下文"
-          >（<template v-for="(條目1, i) in 條目.釋義上下文"
-            >{{i ? '／' : ''}}{{條目1.小韻字號 === 條目.小韻字號 ? '～' : `${條目1.字頭}${條目1.釋義 ? '：' :
-              ''}${條目1.釋義 ??''}`}}</template>）</template>
-        </p>
+        <p v-if="條目.字頭說明" class="headword-note">{{ 條目.字頭說明 }}</p>
+        <p v-if="條目.釋義" class="note">{{ 條目.釋義 }}</p>
         <p class="cite">
           {{條目.來源}} {{條目.韻目}}韻
         </p>
@@ -127,10 +121,13 @@
       .result-item .headword {
         font-size: 2rem;
         line-height: 0;
-        margin-right: 1.5rem;
+        margin-right: 0.5rem;
       }
       .result-item .headword-note {
         font-size: 0.75rem;
+      }
+      .result-item .pronunciation {
+        margin-left: 0.5rem;
       }
     </style>
   </head>
