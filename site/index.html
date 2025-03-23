@@ -69,7 +69,7 @@
                 continue;
               }
               for (const 上下文條目 of 條目.釋義上下文) {
-                const 展開條目 = { ...條目, ...上下文條目 };
+                const 展開條目 = Object.assign(Object.create(Object.getPrototypeOf(條目)), 條目, 上下文條目);
                 seen.add(keyForEntry(展開條目));
                 expanded.push(展開條目);
               }
