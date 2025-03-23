@@ -41,9 +41,21 @@
           const input = ref('');
           const result = ref([]);
 
-          function doQuery(query) {
+          function doQuery(query, fromUrl = false) {
             query = query ?? input.value;
+
             input.value = query;
+            const url = new URL(location);
+            url.search = '';
+            if (query) {
+              url.searchParams.set('q', query);
+            }
+            if (fromUrl) {
+              history.replaceState(null, '', url);
+            } else {
+              history.pushState(null, '', url);
+            }
+
             const rawResult = TshetUinh.資料.query字頭(query);
             const expanded = [];
             const seen = new Set();
@@ -65,7 +77,14 @@
             result.value = expanded;
           }
 
-          onMounted(() => doQuery('好'));
+          onMounted(() => {
+            const queryFromUrl = () => {
+              const url = new URL(location);
+              doQuery(url.searchParams.get('q') ?? '', true);
+            };
+            window.addEventListener('popstate', queryFromUrl);
+            queryFromUrl();
+          });
 
           return {
             input,
