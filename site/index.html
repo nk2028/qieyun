@@ -41,6 +41,13 @@
           const input = ref('');
           const result = ref([]);
 
+          function getRawResult(query) {
+            if (query.startsWith('@')) {
+              return TshetUinh.資料.廣韻.get原書小韻(Number(query.slice(1))) ?? [];
+            }
+            return TshetUinh.資料.query字頭(query);
+          }
+
           function doQuery(query, fromUrl = false) {
             query = query ?? input.value;
 
@@ -56,7 +63,7 @@
               history.pushState(null, '', url);
             }
 
-            const rawResult = TshetUinh.資料.query字頭(query);
+            const rawResult = getRawResult(query);
             const expanded = [];
             const seen = new Set();
             for (const 條目 of rawResult) {
