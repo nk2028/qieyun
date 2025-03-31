@@ -58,10 +58,13 @@
           const selected原書小韻號 = ref(1);
 
           function onClick卷(卷) {
+            const changed = showing卷.value !== 卷;
             showing卷.value = 卷;
-            for (const 韻 in 小韻目錄[卷]) {
-              showing韻.value = 韻;
-              break;
+            if (changed) {
+              for (const 韻 in 小韻目錄[卷]) {
+                showing韻.value = 韻;
+                break;
+              }
             }
           }
 
