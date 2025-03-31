@@ -186,26 +186,30 @@
 
     <template id="template-rhyme-list">
       <div class="rhyme-list">
-        <p>
-          <span v-for="(, 卷) in 小韻目錄" class="item" :class="{ current: 卷 === showing卷 }" @click="onClick卷(卷)"
+        <div class="row">
+          卷：<span
+            v-for="(, 卷) in 小韻目錄"
+            class="tab-item"
+            :class="{ current: 卷 === showing卷 }"
+            @click="onClick卷(卷)"
           >{{ 卷 }}</span>
-        </p>
-        <p>
-          <span
+        </div>
+        <div class="row">
+          韻：<span
             v-for="(, 韻) in 小韻目錄[showing卷]"
-            class="item"
+            class="tab-item"
             :class="{ current: 韻 === showing韻 }"
             @click="showing韻 = 韻"
           >{{ 韻 }}</span>
-        </p>
-        <p>
-          <span
+        </div>
+        <div class="row">
+          小韻：<span
             v-for="[原書小韻號, 首字] in 小韻目錄[showing卷][showing韻]"
             class="item"
             :class="{ current: 原書小韻號 === selected原書小韻號 }"
             @click="onClick小韻(原書小韻號)"
           >{{ 首字.字頭 }}</span>
-        </p>
+        </div>
       </div>
     </template>
 
@@ -229,13 +233,34 @@
     </template>
 
     <style>
-      .rhyme-list .item {
-        margin: 0 0.1rem;
+      .rhyme-list .row {
+        margin: 0.5rem 0;
+        display: flex;
+        flex-wrap: wrap;
+      }
+      .rhyme-list :is(.tab-item, .item) {
+        padding: 0 0.1rem;
+        margin: 0.1rem 0;
+        margin-right: -1px;
+        border: 1px solid #dfdfdf;
+        --border-color: #484848;
       }
       .rhyme-list .current {
-        font-size: 125%;
-        line-height: 100%;
+        position: relative;
+        z-index: 1;
+        font-weight: 700;
       }
+      .rhyme-list .tab-item {
+        border-bottom-color: var(--border-color);
+      }
+      .rhyme-list .tab-item.current {
+        border-color: var(--border-color);
+        border-bottom-color: transparent;
+      }
+      .rhyme-list .item.current {
+        border-color: var(--border-color);
+      }
+
       .result-item {
         padding: 1em 0;
       }
