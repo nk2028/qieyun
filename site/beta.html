@@ -196,7 +196,13 @@
     <template id="template-app">
       <h1>TshetUinh.js 查字</h1>
       <form @submit.prevent="doQuery()">
-        <input type="text" class="query" placeholder="輸入要查的單字" v-model.trim="input" @focus="$event.target.select()" />
+        <input
+          type="text"
+          class="query"
+          placeholder="輸入要查的單字"
+          v-model.trim="input"
+          @focus="$event.target.select()"
+        />
         <input type="submit" value="查詢" />
       </form>
       <rhyme-list ref="rhymeList" @query="(原書小韻號) => doQuery('@' + 原書小韻號)"></rhyme-list>
