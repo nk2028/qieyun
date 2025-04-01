@@ -236,10 +236,12 @@
           v-model.trim="input"
           @focus="$event.target.select()"
         />
-        <input type="submit" value="查詢" />
+        <input type="submit" value="檢索" />
       </form>
       <rhyme-list ref="rhymeList" @query="doQuery"></rhyme-list>
-      <p>查詢結果：</p>
+      <p v-if="!currentQuery">（請輸入要查的字並點擊「檢索」，或點擊《廣韻》卷目以瀏覽）</p>
+      <p v-else-if="result.length">檢索結果（{{result.length}} 筆）：</p>
+      <p v-else>（無檢索結果）</p>
       <ul>
         <li v-for="條目 in result" :key="keyForEntry(條目)">
           <result-entry :條目 :clickable小韻號 @query="doQuery"></result-entry>
