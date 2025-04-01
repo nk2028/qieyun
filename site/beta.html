@@ -63,7 +63,8 @@
       };
 
       const RhymeList = {
-        setup(_props, { emit, expose }) {
+        emits: ['query'],
+        setup(_props, { expose }) {
           const selected卷目 = ref(null);
           const selected韻目 = ref(null);
           const selected原書小韻號 = ref(null);
@@ -117,7 +118,6 @@
           Entry,
           RhymeList,
         },
-        emits: ['query'],
         setup() {
           const input = ref('');
           const result = ref([]);
