@@ -6,40 +6,51 @@
     <title>Qieyun</title>
     <script type="module">
       import TshetUinh from 'https://cdn.jsdelivr.net/npm/tshet-uinh@0.16.0-beta.2/dist/tshet-uinh.esm.min.js';
-      import { createApp, onMounted, ref } from 'https://cdn.jsdelivr.net/npm/vue@3/dist/vue.esm-browser.js';
+      import {
+        computed,
+        createApp,
+        onMounted,
+        ref,
+      } from 'https://cdn.jsdelivr.net/npm/vue@3/dist/vue.esm-browser.js';
 
-      const [小韻目錄, 所在卷] = (function get全韻目小韻() {
-        const 小韻目錄 = {};
-        const 所在卷 = {};
-        const 卷首韻目 = { 東: '上平', 先: '下平', 董: '上', 送: '去', 屋: '入' };
-        let 卷;
-        let 卷內目錄;
-        let 韻;
-        let 韻內目錄;
+      const tupaTable = JSON.parse(await (fetch('tupa.json').then(x => x.text())));
+
+      const { 各卷目錄, 各韻目錄 } = (function 建立小韻目錄() {
+        /**@type{{ [卷目: string]: string[] }}*/
+        const 各卷目錄 = {};
+        /**@type{{ [韻目: string]: [number, any][] & { 卷目: string } }}*/
+        const 各韻目錄 = {};
+        const 首韻所在卷 = { 東: '上平', 先: '下平', 董: '上', 送: '去', 屋: '入' };
+        let 卷目;
+        let 卷目錄;
+        let 韻目;
+        let 韻目錄;
         let 原書小韻號 = 0;
         for (const 小韻 of TshetUinh.資料.廣韻.iter原書小韻()) {
           原書小韻號++;
           const { 韻目: 小韻韻目 } = 小韻[0];
-          if (小韻韻目 !== 韻) {
-            if (小韻韻目 in 卷首韻目) {
-              卷 = 卷首韻目[小韻韻目];
-              卷內目錄 = {};
-              小韻目錄[卷] = 卷內目錄;
+          if (小韻韻目 !== 韻目) {
+            if (小韻韻目 in 首韻所在卷) {
+              卷目 = 首韻所在卷[小韻韻目];
+              卷目錄 = [];
+              各卷目錄[卷目] = 卷目錄;
             }
-            韻 = 小韻韻目;
-            韻內目錄 = [];
-            卷內目錄[韻] = 韻內目錄;
-            所在卷[韻] = 卷;
+            韻目 = 小韻韻目;
+            卷目錄.push(韻目);
+            韻目錄 = [];
+            韻目錄.卷目 = 卷目;
+            各韻目錄[韻目] = 韻目錄;
           }
-          韻內目錄.push([原書小韻號, 小韻[0]]);
+          韻目錄.push([原書小韻號, 小韻[0]]);
         }
-        return [小韻目錄, 所在卷];
+        return { 各卷目錄, 各韻目錄 };
       })();
-
-      const tupaTable = JSON.parse(await (fetch('tupa.json').then(x => x.text())));
 
       function keyForEntry(條目) {
         return `${條目.來源}/${條目.小韻號}/${條目.小韻字號}`;
+      }
+      function hrefFor小韻(原書小韻號) {
+        return '?' + new URLSearchParams([['q', `@${原書小韻號}`]]).toString();
       }
 
       const Entry = {
@@ -52,44 +63,51 @@
       };
 
       const RhymeList = {
-        setup(_props, { emit }) {
-          const showing卷 = ref('上平');
-          const showing韻 = ref('東');
-          const selected原書小韻號 = ref(1);
+        setup(_props, { emit, expose }) {
+          const selected卷目 = ref(null);
+          const selected韻目 = ref(null);
+          const selected原書小韻號 = ref(null);
 
-          function onClick卷(卷) {
-            const changed = showing卷.value !== 卷;
-            showing卷.value = 卷;
-            if (changed) {
-              for (const 韻 in 小韻目錄[卷]) {
-                showing韻.value = 韻;
-                break;
-              }
-            }
-          }
-
-          function onClick小韻(原書小韻號) {
-            selected原書小韻號.value = 原書小韻號;
-            emit('query', 原書小韻號);
-          }
+          const 卷選單 = computed(() =>
+            Object.entries(各卷目錄).map(([卷目, [首韻]]) => ({
+              卷目,
+              原書小韻號: 各韻目錄[首韻][0][0],
+              isCurrent: 卷目 === selected卷目.value,
+            }))
+          );
+          const 韻選單 = computed(() =>
+            各卷目錄[selected卷目.value]?.map(韻目 => ({
+              韻目,
+              原書小韻號: 各韻目錄[韻目][0][0],
+              isCurrent: 韻目 === selected韻目.value,
+            }))
+          );
+          const 小韻選單 = computed(() =>
+            各韻目錄[selected韻目.value]?.map(([原書小韻號, 條目]) => ({
+              首字: 條目.字頭校正(),
+              原書小韻號,
+              isCurrent: 原書小韻號 === selected原書小韻號.value,
+            }))
+          );
 
           function select(原書小韻號) {
-            selected原書小韻號.value = 原書小韻號;
-            showing韻.value = TshetUinh.資料.廣韻.get原書小韻(原書小韻號)?.[0].韻目 ?? '東';
-            showing卷.value = 所在卷[showing韻.value];
+            const 條目 = TshetUinh.資料.廣韻.get原書小韻(原書小韻號)?.[0];
+            selected原書小韻號.value = 條目 ? 原書小韻號 : null;
+            selected韻目.value = 條目 ? 條目.韻目 : null;
+            selected卷目.value = 條目 ? 各韻目錄[條目.韻目].卷目 : null;
           }
 
+          expose({ select });
+
           return {
-            showing卷,
-            showing韻,
+            selected卷目,
+            selected韻目,
             selected原書小韻號,
-            onClick卷,
-            onClick小韻,
-            select,
+            卷選單,
+            韻選單,
+            小韻選單,
+            hrefFor小韻,
           };
-        },
-        computed: {
-          小韻目錄: () => 小韻目錄,
         },
         template: '#template-rhyme-list',
       };
@@ -112,6 +130,7 @@
               rhymeList.value.select(原書小韻號);
               return TshetUinh.資料.廣韻.get原書小韻(原書小韻號) ?? [];
             }
+            rhymeList.value.select(null);
             return TshetUinh.資料.query字頭(query);
           }
 
@@ -175,11 +194,13 @@
     </script>
 
     <template id="template-app">
+      <h1>TshetUinh.js 查字</h1>
       <form @submit.prevent="doQuery()">
-        <input type="text" v-model.trim="input" />
+        <input type="text" class="query" placeholder="輸入要查的單字" v-model.trim="input" @focus="$event.target.select()" />
         <input type="submit" value="查詢" />
       </form>
       <rhyme-list ref="rhymeList" @query="(原書小韻號) => doQuery('@' + 原書小韻號)"></rhyme-list>
+      <p>查詢結果：</p>
       <ul>
         <li v-for="條目 in result" :key="keyForEntry(條目)">
           <entry :條目="條目"></entry>
@@ -189,30 +210,30 @@
 
     <template id="template-rhyme-list">
       <div class="rhyme-list">
-        <div class="row">
-          卷：<span
-            v-for="(, 卷) in 小韻目錄"
-            class="tab-item"
-            :class="{ current: 卷 === showing卷 }"
-            @click="onClick卷(卷)"
-          >{{ 卷 }}</span>
-        </div>
-        <div class="row">
-          韻：<span
-            v-for="(, 韻) in 小韻目錄[showing卷]"
-            class="tab-item"
-            :class="{ current: 韻 === showing韻 }"
-            @click="showing韻 = 韻"
-          >{{ 韻 }}</span>
-        </div>
-        <div class="row">
-          小韻：<span
-            v-for="[原書小韻號, 首字] in 小韻目錄[showing卷][showing韻]"
-            class="item"
-            :class="{ current: 原書小韻號 === selected原書小韻號 }"
-            @click="onClick小韻(原書小韻號)"
-          >{{ 首字.字頭校正() }}</span>
-        </div>
+        <p>
+          瀏覽《廣韻》：<a
+            v-for="{ 卷目, 原書小韻號, isCurrent } in 卷選單"
+            :class="{ current: isCurrent }"
+            :href="isCurrent ? null : hrefFor小韻(原書小韻號)"
+            @click.prevent="isCurrent || $emit('query', 原書小韻號)"
+          >{{ 卷目 }}</a>
+        </p>
+        <p v-if="韻選單">
+          韻目：<a
+            v-for="{ 韻目, 原書小韻號, isCurrent } in 韻選單"
+            :class="{ current: isCurrent }"
+            :href="isCurrent ? null : hrefFor小韻(原書小韻號)"
+            @click.prevent="isCurrent || $emit('query', 原書小韻號)"
+          >{{ 韻目 }}</a>
+        </p>
+        <p v-if="小韻選單">
+          小韻：<a
+            v-for="{ 首字, 原書小韻號, isCurrent } in 小韻選單"
+            :class="{ current: isCurrent }"
+            :href="isCurrent ? null : hrefFor小韻(原書小韻號)"
+            @click.prevent="isCurrent || $emit('query', 原書小韻號)"
+          >{{ 首字 }}</a>
+        </p>
       </div>
     </template>
 
@@ -236,32 +257,20 @@
     </template>
 
     <style>
-      .rhyme-list .row {
-        margin: 0.5rem 0;
-        display: flex;
-        flex-wrap: wrap;
+      .rhyme-list a:is(:link, :visited) {
+        color: #4477cc;
+        text-decoration: none;
       }
-      .rhyme-list :is(.tab-item, .item) {
-        padding: 0 0.1rem;
-        margin: 0.1rem 0;
-        margin-right: -1px;
-        border: 1px solid #dfdfdf;
-        --border-color: #484848;
+
+      input.query {
+        width: 8rem;
       }
-      .rhyme-list .current {
-        position: relative;
-        z-index: 1;
-        font-weight: 700;
+
+      .rhyme-list a {
+        padding: 0 0.125rem;
       }
-      .rhyme-list .tab-item {
-        border-bottom-color: var(--border-color);
-      }
-      .rhyme-list .tab-item.current {
-        border-color: var(--border-color);
-        border-bottom-color: transparent;
-      }
-      .rhyme-list .item.current {
-        border-color: var(--border-color);
+      .rhyme-list a.current {
+        font-weight: 600;
       }
 
       .result-item {
