@@ -153,14 +153,25 @@
 
           const rhymeList = ref(null);
 
-          function queryRawResult(query) {
-            if (query.startsWith('@')) {
-              const 原書小韻號 = Number(query.slice(1));
-              rhymeList.value.select(原書小韻號);
-              return TshetUinh.資料.廣韻.get原書小韻(原書小韻號) ?? [];
+          function expand上下文(各條目) {
+            const expanded = [];
+            const seen = new Set();
+            for (const 條目 of 各條目) {
+              const key = keyForEntry(條目);
+              if (seen.has(key)) {
+                continue;
+              }
+              if (!條目.釋義上下文) {
+                expanded.push(條目);
+                continue;
+              }
+              for (const 上下文條目 of 條目.釋義上下文) {
+                const 展開條目 = Object.assign(Object.create(Object.getPrototypeOf(條目)), 條目, 上下文條目);
+                seen.add(keyForEntry(展開條目));
+                expanded.push(展開條目);
+              }
             }
-            rhymeList.value.select(null);
-            return TshetUinh.資料.query字頭(query);
+            return expanded;
           }
 
           function doQuery(query, fromUrl = false) {
@@ -180,25 +191,15 @@
 
             currentQuery.value = query;
 
-            const rawResult = queryRawResult(query);
-            const expanded = [];
-            const seen = new Set();
-            for (const 條目 of rawResult) {
-              const key = keyForEntry(條目);
-              if (seen.has(key)) {
-                continue;
-              }
-              if (!條目.釋義上下文) {
-                expanded.push(條目);
-                continue;
-              }
-              for (const 上下文條目 of 條目.釋義上下文) {
-                const 展開條目 = Object.assign(Object.create(Object.getPrototypeOf(條目)), 條目, 上下文條目);
-                seen.add(keyForEntry(展開條目));
-                expanded.push(展開條目);
-              }
+            if (query.startsWith('@')) {
+              const 原書小韻號 = Number(query.slice(1));
+              rhymeList.value.select(原書小韻號);
+              result.value = TshetUinh.資料.廣韻.get原書小韻(原書小韻號) ?? [];
+              return;
             }
-            result.value = expanded;
+
+            rhymeList.value.select(null);
+            result.value = expand上下文(TshetUinh.資料.query字頭(query));
           }
 
           onMounted(() => {
