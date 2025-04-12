@@ -64,6 +64,9 @@
       function keyForEntry(條目) {
         return `${條目.來源}/${條目.小韻號}/${條目.小韻字號}`;
       }
+      function 字頭校正或原貌(條目) {
+        return 條目 && (條目.字頭校正() ?? 條目.字頭原貌());
+      }
       function hrefFor小韻(原書小韻號) {
         return '?' + new URLSearchParams([['q', `@${原書小韻號}`]]).toString();
       }
@@ -84,7 +87,11 @@
 
       const ResultEntry = {
         emits: ['query'],
-        props: { 條目: { required: true }, clickable小韻號: { type: Boolean, default: false } },
+        props: {
+          條目: { required: true },
+          is小韻query: { type: Boolean, required: true },
+          hrefFor字: { type: Function },
+        },
         computed: {
           showDebug: () => false,
           tupa() {
@@ -94,12 +101,13 @@
             return this.條目.小韻號.replace(/[a-z]$/, '');
           },
           小韻首字() {
-            const 原書首字 = 原書小韻首字[this.原書小韻號]?.字頭校正() ?? '';
-            const 細分首字 = 細分小韻首字[this.條目.小韻號]?.字頭校正();
-            return 原書首字 + (細分首字 ? `（${細分首字}）` : '');
+            const 原書首字 = 原書小韻首字[this.原書小韻號];
+            const 細分首字 = 細分小韻首字[this.條目.小韻號];
+            return 字頭校正或原貌(原書首字) + (細分首字 ? `（${字頭校正或原貌(細分首字)}）` : '');
           },
         },
         methods: {
+          字頭校正或原貌,
           hrefFor小韻,
         },
         template: '#template-result-entry',
@@ -128,7 +136,7 @@
           );
           const 小韻選單 = computed(() =>
             各韻目錄[selected韻目.value]?.map((原書小韻號) => ({
-              首字: 原書小韻首字[原書小韻號].字頭校正(),
+              首字: 字頭校正或原貌(原書小韻首字[原書小韻號]),
               原書小韻號,
               isCurrent: 原書小韻號 === selected原書小韻號.value,
             }))
@@ -170,9 +178,17 @@
           const activeQuery = ref('');
           const result = ref([]);
 
-          const clickable小韻號 = computed(() => !activeQuery.value.startsWith('@'));
+          const is小韻query = computed(() => activeQuery.value.startsWith('@'));
 
           const rhymeList = ref(null);
+
+          function hrefFor字(字) {
+            const params = new URLSearchParams([['q', 字]]);
+            if (variantOption.value !== DEFAULT_QUERY_VARIANTS) {
+              params.set('var', variantOption.value);
+            }
+            return '?' + params.toString();
+          }
 
           function expandAndSortEntries(各條目) {
             const unique = new Map();
@@ -235,7 +251,7 @@
               rhymeList.value.select(原書小韻號);
               result.value = TshetUinh.資料.廣韻.get原書小韻(原書小韻號) ?? [];
               if (result.value.length) {
-                document.title = `${原書小韻號} ${result.value[0].字頭校正()}小韻 - ${ORIGINAL_TITLE}`;
+                document.title = `${原書小韻號} ${字頭校正或原貌(result.value[0])}小韻 - ${ORIGINAL_TITLE}`;
               }
             } else {
               rhymeList.value.select(null);
@@ -262,9 +278,10 @@
             input,
             variantOption,
             activeQuery,
+            is小韻query,
             result,
-            clickable小韻號,
             rhymeList,
+            hrefFor字,
             doQuery,
             keyForEntry,
           };
@@ -300,7 +317,7 @@
       <p v-else>（無檢索結果）</p>
       <ul>
         <li v-for="條目 in result" :key="keyForEntry(條目)">
-          <result-entry :條目 :clickable小韻號 @query="doQuery"></result-entry>
+          <result-entry :條目 :is小韻query :href-for字 @query="doQuery"></result-entry>
         </li>
       </ul>
     </template>
@@ -337,7 +354,11 @@
     <template id="template-result-entry">
       <article class="result-item">
         <p>
-          <span class="headword">{{ 條目.字頭 }}</span>
+          <a
+            class="headword"
+            :href="hrefFor字(字頭校正或原貌(條目))"
+            @click.prevent="$emit('query', 字頭校正或原貌(條目))"
+          >{{ 條目.字頭 }}</a>
           <span class="pronunciation position">{{ 條目.音韻地位.描述 }}</span>
           <span class="pronunciation tupa">{{ tupa }}</span>
           <span v-if="條目.反切" class="pronunciation fanqie"
@@ -349,13 +370,13 @@
         <p class="cite">
           <a
             v-if="條目.來源 === '廣韻'"
-            :href="clickable小韻號 ? hrefFor小韻(原書小韻號) : null"
+            :href="is小韻query ? null : hrefFor小韻(原書小韻號)"
             @click.prevent="$emit('query', `@${原書小韻號}`)"
           >{{條目.來源}} {{條目.韻目}}韻 {{條目.小韻號}} {{小韻首字}}小韻
           </a>
           <template v-else>{{條目.來源}} {{條目.韻目}}韻 {{條目.小韻號}}小韻</template>
         </p>
-        <p v-if="showDebug" style="color: darkgray">{{ clickable小韻號 }}; {{ 條目 }}</p>
+        <p v-if="showDebug" style="color: darkgray">is小韻query: {{ is小韻query }}; {{ 條目 }}</p>
       </article>
     </template>
 
@@ -363,6 +384,15 @@
       a:link, a:visited {
         color: #4477cc;
         text-decoration: none;
+      }
+      a:link:hover {
+        color: #717a8a;
+      }
+      a.headword:is(:link, :visited) {
+        color: initial;
+      }
+      a.headword:link:hover {
+        color: #4477cc;
       }
 
       .beta-note {
