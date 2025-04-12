@@ -276,7 +276,7 @@
     </script>
 
     <template id="template-app">
-      <h1>查字</h1>
+      <h1>查字<span class="beta-note">測試版</span></h1>
       <form @submit.prevent="doQuery()">
         <input
           type="text"
@@ -365,6 +365,10 @@
       a:link, a:visited {
         color: #4477cc;
         text-decoration: none;
+      }
+
+      .beta-note {
+        font-size: 40%;
       }
 
       input.query {
