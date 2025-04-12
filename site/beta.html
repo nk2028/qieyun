@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width" />
-    <title>Qieyun</title>
+    <title>查字</title>
     <script type="module">
       import TshetUinh from 'https://cdn.jsdelivr.net/npm/tshet-uinh@0.16.0-beta.2/dist/tshet-uinh.esm.min.js';
       import {
@@ -12,8 +12,11 @@
         onMounted,
         ref,
       } from 'https://cdn.jsdelivr.net/npm/vue@3/dist/vue.esm-browser.js';
+      import Yitizi from 'https://esm.run/yitizi@0.1.2';
 
       const tupaTable = JSON.parse(await (fetch('tupa.json').then(x => x.text())));
+
+      const ORIGINAL_TITLE = document.title;
 
       const { 各卷目錄, 各韻目錄, 原書小韻首字, 細分小韻首字 } = (function 建立小韻目錄() {
         /**@type{{ [卷目: string]: string[] }}*/
@@ -63,6 +66,20 @@
       }
       function hrefFor小韻(原書小韻號) {
         return '?' + new URLSearchParams([['q', `@${原書小韻號}`]]).toString();
+      }
+      function compareEntryOrder(條目1, 條目2) {
+        if (條目1.來源 !== 條目2.來源) {
+          return 條目1.來源 < 條目2.來源 ? -1 : 1;
+        }
+        const 原書小韻號1 = Number(條目1.小韻號.replace(/[a-z]$/, ''));
+        const 原書小韻號2 = Number(條目2.小韻號.replace(/[a-z]$/, ''));
+        if (原書小韻號1 !== 原書小韻號2) {
+          return 原書小韻號1 - 原書小韻號2;
+        }
+        const pattern小韻字號 = /^(\d+)(?:a(\d+))?$/;
+        const [原書字號1, 增字號1] = pattern小韻字號.exec(條目1.小韻字號).slice(1).map(Number);
+        const [原書字號2, 增字號2] = pattern小韻字號.exec(條目2.小韻字號).slice(1).map(Number);
+        return 原書字號1 !== 原書字號2 ? 原書字號1 - 原書字號2 : 增字號1 - 增字號2;
       }
 
       const ResultEntry = {
@@ -145,67 +162,97 @@
           RhymeList,
         },
         setup() {
+          const DEFAULT_QUERY_VARIANTS = 'yes';
+
           const input = ref('');
-          const currentQuery = ref('');
+          const variantOption = ref(DEFAULT_QUERY_VARIANTS);
+
+          const activeQuery = ref('');
           const result = ref([]);
 
-          const clickable小韻號 = computed(() => !currentQuery.value.startsWith('@'));
+          const clickable小韻號 = computed(() => !activeQuery.value.startsWith('@'));
 
           const rhymeList = ref(null);
 
-          function expand上下文(各條目) {
-            const expanded = [];
-            const seen = new Set();
+          function expandAndSortEntries(各條目) {
+            const unique = new Map();
             for (const 條目 of 各條目) {
-              const key = keyForEntry(條目);
-              if (seen.has(key)) {
-                continue;
-              }
-              if (!條目.釋義上下文) {
-                expanded.push(條目);
-                continue;
-              }
-              for (const 上下文條目 of 條目.釋義上下文) {
-                const 展開條目 = Object.assign(Object.create(Object.getPrototypeOf(條目)), 條目, 上下文條目);
-                seen.add(keyForEntry(展開條目));
-                expanded.push(展開條目);
+              const expanded = 條目.釋義上下文
+                ? 條目.釋義上下文.map(上下文條目 =>
+                  Object.assign(Object.create(Object.getPrototypeOf(條目)), 條目, 上下文條目)
+                )
+                : [條目];
+              for (const 展開條目 of expanded) {
+                const key = keyForEntry(展開條目);
+                if (!unique.has(key)) {
+                  unique.set(key, 展開條目);
+                }
               }
             }
-            return expanded;
+            return [...unique.values()].sort(compareEntryOrder);
           }
 
-          function doQuery(query, fromUrl = false) {
-            query = query ?? input.value;
+          function doQuery(query, queryVariants, noHistory = false) {
+            query = query || input.value;
+            const is小韻號 = query.startsWith('@');
+
+            if (is小韻號) {
+              queryVariants = 'ignore';
+            } else {
+              queryVariants = queryVariants || variantOption.value;
+            }
+            if (!['yes', 'fallback', 'no', 'ignore'].includes(queryVariants)) {
+              queryVariants = DEFAULT_QUERY_VARIANTS;
+            }
 
             input.value = query;
+            if (queryVariants !== 'ignore') {
+              variantOption.value = queryVariants;
+            }
+
+            const urlOld = new URL(location);
+            urlOld.searchParams.delete('var');
             const url = new URL(location);
             url.search = '';
             if (query) {
               url.searchParams.set('q', query);
             }
-            if (fromUrl) {
+            const urlMatch = url.toString() === urlOld.toString();
+            if (queryVariants !== 'ignore' && queryVariants !== DEFAULT_QUERY_VARIANTS) {
+              url.searchParams.set('var', queryVariants);
+            }
+            if (noHistory || urlMatch) {
               history.replaceState(null, '', url);
             } else {
               history.pushState(null, '', url);
             }
+            document.title = (query ? `${query} - ` : '') + ORIGINAL_TITLE;
 
-            currentQuery.value = query;
+            activeQuery.value = query;
 
-            if (query.startsWith('@')) {
+            if (is小韻號) {
               const 原書小韻號 = Number(query.slice(1));
               rhymeList.value.select(原書小韻號);
               result.value = TshetUinh.資料.廣韻.get原書小韻(原書小韻號) ?? [];
-              return;
+              if (result.value.length) {
+                document.title = `${原書小韻號} ${result.value[0].字頭校正()}小韻 - ${ORIGINAL_TITLE}`;
+              }
+            } else {
+              rhymeList.value.select(null);
+              let rawResult = TshetUinh.資料.query字頭(query);
+              if (queryVariants === 'yes' || (queryVariants === 'fallback' && !rawResult.length)) {
+                for (const 字 of Yitizi.get(query)) {
+                  rawResult.push(...TshetUinh.資料.query字頭(字));
+                }
+              }
+              result.value = expandAndSortEntries(rawResult);
             }
-
-            rhymeList.value.select(null);
-            result.value = expand上下文(TshetUinh.資料.query字頭(query));
           }
 
           onMounted(() => {
             const queryFromUrl = () => {
               const url = new URL(location);
-              doQuery(url.searchParams.get('q') ?? '', true);
+              doQuery(url.searchParams.get('q') ?? '', url.searchParams.get('var') || '', true);
             };
             window.addEventListener('popstate', queryFromUrl);
             queryFromUrl();
@@ -213,7 +260,8 @@
 
           return {
             input,
-            currentQuery,
+            variantOption,
+            activeQuery,
             result,
             clickable小韻號,
             rhymeList,
@@ -228,7 +276,7 @@
     </script>
 
     <template id="template-app">
-      <h1>TshetUinh.js 查字</h1>
+      <h1>查字</h1>
       <form @submit.prevent="doQuery()">
         <input
           type="text"
@@ -238,9 +286,16 @@
           @focus="$event.target.select()"
         />
         <input type="submit" value="檢索" />
+        <label>
+          檢索異體字：<select v-model="variantOption" @change="doQuery()">
+            <option value="no">不檢索異體字</option>
+            <option value="fallback">僅原字無檢索結果時檢索異體字</option>
+            <option value="yes">檢索異體字</option>
+          </select>
+        </label>
       </form>
       <rhyme-list ref="rhymeList" @query="doQuery"></rhyme-list>
-      <p v-if="!currentQuery">（請輸入要查的字並點擊「檢索」，或點擊《廣韻》卷目以瀏覽）</p>
+      <p v-if="!activeQuery">（請輸入要查的字並點擊「檢索」，或點擊《廣韻》卷目以瀏覽）</p>
       <p v-else-if="result.length">檢索結果（{{result.length}} 筆）：</p>
       <p v-else>（無檢索結果）</p>
       <ul>
@@ -348,6 +403,7 @@
   <body>
     <div id="app">
       <p>載入中……</p>
+      <p>（首次啟動可能需要一點時間，之後的啟動會快一些）</p>
       <noscript>※ 您需要啟用 JavaScript 以使用本頁面</noscript>
     </div>
   </body>
