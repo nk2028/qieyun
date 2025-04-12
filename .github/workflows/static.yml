@@ -33,6 +33,13 @@ jobs:
         uses: actions/checkout@v4
       - name: Setup Pages
         uses: actions/configure-pages@v5
+      - name: Use production version of the framework
+        run: |
+          num="$(perl -i -ple '$k+= s|(\Qhttps://cdn.jsdelivr.net/npm/vue@3/dist/vue.esm-browser\E)\.js|$1.prod.js|g; END{print $k}' site/beta.html)"
+          if [[ "$num" != 1 ]]; then
+            echo "expect 1 match, got $num matches"
+            exit 1
+          fi
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
