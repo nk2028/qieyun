@@ -347,15 +347,13 @@
         <p v-if="條目.字頭說明" class="headword-note">{{ 條目.字頭說明 }}</p>
         <p v-if="條目.釋義" class="note">{{ 條目.釋義 }}</p>
         <p class="cite">
-          {{條目.來源}}
           <a
             v-if="條目.來源 === '廣韻'"
             :href="clickable小韻號 ? hrefFor小韻(原書小韻號) : null"
             @click.prevent="$emit('query', `@${原書小韻號}`)"
-          >
-            {{條目.韻目}}韻 {{條目.小韻號}} {{小韻首字}}小韻
+          >{{條目.來源}} {{條目.韻目}}韻 {{條目.小韻號}} {{小韻首字}}小韻
           </a>
-          <template v-else>{{條目.韻目}}韻 {{條目.小韻號}}小韻</template>
+          <template v-else>{{條目.來源}} {{條目.韻目}}韻 {{條目.小韻號}}小韻</template>
         </p>
         <p v-if="showDebug" style="color: darkgray">{{ clickable小韻號 }}; {{ 條目 }}</p>
       </article>
