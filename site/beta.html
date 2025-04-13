@@ -190,22 +190,28 @@
             return '?' + params.toString();
           }
 
-          function expandAndSortEntries(各條目) {
+          function expandEntries(各條目, filter = () => true) {
             const unique = new Map();
             for (const 條目 of 各條目) {
-              const expanded = 條目.釋義上下文
-                ? 條目.釋義上下文.map(上下文條目 =>
-                  Object.assign(Object.create(Object.getPrototypeOf(條目)), 條目, 上下文條目)
-                )
-                : [條目];
-              for (const 展開條目 of expanded) {
+              const 展開各條目 = 條目.釋義上下文?.map(上下文條目 =>
+                Object.assign(Object.create(Object.getPrototypeOf(條目)), 條目, 上下文條目)
+              ) ?? [條目];
+              for (const 展開條目 of 展開各條目) {
                 const key = keyForEntry(展開條目);
-                if (!unique.has(key)) {
+                if (!unique.has(key) && filter(key, 條目)) {
                   unique.set(key, 展開條目);
                 }
               }
             }
-            return [...unique.values()].sort(compareEntryOrder);
+            return unique;
+          }
+
+          function expandAndSortEntries(各條目, 異體各條目) {
+            const unique = expandEntries(各條目);
+            const sorted = [...unique.values()].sort(compareEntryOrder);
+            const uniqueVariants = expandEntries(異體各條目, key => !unique.has(key));
+            const sortedVariants = [...uniqueVariants.values()].sort(compareEntryOrder);
+            return [...sorted, ...sortedVariants];
           }
 
           function doQuery(query, queryVariants, noHistory = false) {
@@ -255,13 +261,14 @@
               }
             } else {
               rhymeList.value.select(null);
-              let rawResult = TshetUinh.資料.query字頭(query);
+              const rawResult = TshetUinh.資料.query字頭(query);
+              const variantResult = [];
               if (queryVariants === 'yes' || (queryVariants === 'fallback' && !rawResult.length)) {
                 for (const 字 of Yitizi.get(query)) {
-                  rawResult.push(...TshetUinh.資料.query字頭(字));
+                  variantResult.push(...TshetUinh.資料.query字頭(字));
                 }
               }
-              result.value = expandAndSortEntries(rawResult);
+              result.value = expandAndSortEntries(rawResult, variantResult);
             }
           }
 
