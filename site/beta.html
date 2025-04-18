@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width" />
-    <title>查字</title>
+    <title>切韻音系字音查詢</title>
     <script type="module">
       import TshetUinh from 'https://cdn.jsdelivr.net/npm/tshet-uinh@0.16.0-beta.2/dist/tshet-uinh.esm.min.js';
       import {
@@ -300,60 +300,75 @@
     </script>
 
     <template id="template-app">
-      <h1>查字<span class="beta-note">測試版</span></h1>
-      <form @submit.prevent="doQuery()">
+      <h1>切韻音系字音查詢<span class="beta-note">測試版</span></h1>
+      <form class="query-form" @submit.prevent="doQuery()">
         <input
           type="text"
           class="query"
-          placeholder="輸入要查的單字"
+          placeholder="輸入單個字"
           v-model.trim="input"
           @focus="$event.target.select()"
         />
-        <input type="submit" value="檢索" />
-        <label>
-          檢索異體字：<select v-model="variantOption" @change="doQuery()">
-            <option value="no">不檢索異體字</option>
-            <option value="fallback">僅原字無檢索結果時檢索異體字</option>
+        <input type="submit" class="submit-button" value="查詢" />
+        <div class="variant-option">
+          <label for="variant-select">異體字選項：</label>
+          <select id="variant-select" v-model="variantOption" @change="doQuery()">
             <option value="yes">檢索異體字</option>
+            <option value="fallback">僅原字檢索不到時檢索異體字</option>
+            <option value="no">不檢索異體字</option>
           </select>
-        </label>
+        </div>
       </form>
       <rhyme-list ref="rhymeList" @query="doQuery"></rhyme-list>
-      <p v-if="!activeQuery">（請輸入要查的字並點擊「檢索」，或點擊《廣韻》卷目以瀏覽）</p>
-      <p v-else-if="result.length">檢索結果（{{result.length}} 筆）：</p>
-      <p v-else>（無檢索結果）</p>
-      <ul>
-        <li v-for="條目 in result" :key="keyForEntry(條目)">
-          <result-entry :條目 :is小韻query :href-for字 @query="doQuery"></result-entry>
-        </li>
-      </ul>
+      <div class="result">
+        <p v-if="!activeQuery">（請輸入要查詢的<strong>單個</strong>字並點擊「查詢」，或點擊《廣韻》卷目以瀏覽《廣韻》小韻）</p>
+        <p v-else-if="result.length">
+          <template v-if="is小韻query">小韻轄字</template>
+          <template v-else>查詢結果</template>（{{result.length}} 條）：
+        </p>
+        <p v-else>
+          <template v-if="is小韻query">（無此小韻）</template>
+          <template v-else>（未找到結果）</template>
+        </p>
+        <ul>
+          <li v-for="條目 in result" :key="keyForEntry(條目)">
+            <result-entry :條目 :is小韻query :href-for字 @query="doQuery"></result-entry>
+          </li>
+        </ul>
+      </div>
     </template>
 
     <template id="template-rhyme-list">
       <div class="rhyme-list">
         <p>
-          瀏覽《廣韻》：<a
-            v-for="{ 卷目, 原書小韻號, isCurrent } in 卷選單"
-            :class="{ current: isCurrent }"
-            :href="isCurrent ? null : hrefFor小韻(原書小韻號)"
-            @click.prevent="isCurrent || $emit('query', `@${原書小韻號}`)"
-          >{{ 卷目 }}</a>
+          <span class="heading">瀏覽《廣韻》：</span>
+          <span>
+            <a
+              v-for="{ 卷目, 原書小韻號, isCurrent } in 卷選單"
+              :href="isCurrent ? null : hrefFor小韻(原書小韻號)"
+              @click.prevent="isCurrent || $emit('query', `@${原書小韻號}`)"
+            >{{ 卷目 }}</a>
+          </span>
         </p>
         <p v-if="韻選單">
-          韻目：<a
-            v-for="{ 韻目, 原書小韻號, isCurrent } in 韻選單"
-            :class="{ current: isCurrent }"
-            :href="isCurrent ? null : hrefFor小韻(原書小韻號)"
-            @click.prevent="isCurrent || $emit('query', `@${原書小韻號}`)"
-          >{{ 韻目 }}</a>
+          <span class="heading">韻目：</span>
+          <span>
+            <a
+              v-for="{ 韻目, 原書小韻號, isCurrent } in 韻選單"
+              :href="isCurrent ? null : hrefFor小韻(原書小韻號)"
+              @click.prevent="isCurrent || $emit('query', `@${原書小韻號}`)"
+            >{{ 韻目 }}</a>
+          </span>
         </p>
         <p v-if="小韻選單">
-          小韻：<a
-            v-for="{ 首字, 原書小韻號, isCurrent } in 小韻選單"
-            :class="{ current: isCurrent }"
-            :href="isCurrent ? null : hrefFor小韻(原書小韻號)"
-            @click.prevent="isCurrent || $emit('query', `@${原書小韻號}`)"
-          >{{ 首字 }}</a>
+          <span class="heading">小韻：</span>
+          <span>
+            <a
+              v-for="{ 首字, 原書小韻號, isCurrent } in 小韻選單"
+              :href="isCurrent ? null : hrefFor小韻(原書小韻號)"
+              @click.prevent="isCurrent || $emit('query', `@${原書小韻號}`)"
+            >{{ 首字 }}</a>
+          </span>
         </p>
       </div>
     </template>
@@ -366,14 +381,17 @@
             :href="hrefFor字(字頭校正或原貌(條目))"
             @click.prevent="$emit('query', 字頭校正或原貌(條目))"
           >{{ 條目.字頭 }}</a>
+          <span class="spacing">&nbsp;</span>
           <span class="pronunciation position">{{ 條目.音韻地位.描述 }}</span>
+          <span class="spacing">&nbsp;</span>
           <span class="pronunciation tupa">{{ tupa }}</span>
+          <span class="spacing">&nbsp;</span>
           <span v-if="條目.反切" class="pronunciation fanqie"
-          >{{ 條目.反切 ? (條目.反切 + (條目.來源 === '廣韻' ? '切': '反')) : ''}}</span>
+          >{{ 條目.反切 ? (條目.反切 + (條目.來源 === '廣韻' ? '切' : '反')) : ''}}</span>
           <span v-if="條目.直音" class="pronunciation zhiyin">音{{ 條目.直音 }}</span>
         </p>
-        <p v-if="條目.字頭說明" class="headword-note">{{ 條目.字頭說明 }}</p>
         <p v-if="條目.釋義" class="note">{{ 條目.釋義 }}</p>
+        <p v-if="條目.字頭說明" class="headword-note">{{ 條目.字頭說明 }}</p>
         <p class="cite">
           <a
             v-if="條目.來源 === '廣韻'"
@@ -381,62 +399,142 @@
             @click.prevent="$emit('query', `@${原書小韻號}`)"
           >{{條目.來源}} {{條目.韻目}}韻 {{條目.小韻號}} {{小韻首字}}小韻
           </a>
-          <template v-else>{{條目.來源}} {{條目.韻目}}韻 {{條目.小韻號}}小韻</template>
+          <template v-else>{{條目.來源}} {{條目.韻目}}韻</template>
         </p>
         <p v-if="showDebug" style="color: darkgray">is小韻query: {{ is小韻query }}; {{ 條目 }}</p>
       </article>
     </template>
 
     <style>
-      a:link, a:visited {
-        color: #4477cc;
+      :root {
+        --link-color: #2277cc;
+        --link-hover-color: #777f88;
+        --headword-note-color: #bb0000;
+      }
+      body {
+        margin: 0;
+      }
+      #app {
+        max-width: 50rem;
+        margin: 0 auto;
+        padding: 1rem;
+      }
+      @media screen and (max-width: 20rem) {
+        #app {
+          padding: 0.5rem;
+        }
+      }
+      #app > * {
+        margin: 1.5rem 0 0;
+      }
+      #app > :first-child {
+        margin: 0;
+      }
+
+      a {
+        color: initial;
         text-decoration: none;
       }
-      a:link:hover {
-        color: #717a8a;
+      a[href] {
+        color: var(--link-color);
+      }
+      a[href]:hover {
+        color: var(--link-hover-color);
         text-decoration: underline;
       }
-      a.headword:is(:link, :visited) {
+      a.headword {
         color: initial;
       }
-      a.headword:link:hover {
-        color: #4477cc;
-      }
-
-      .beta-note {
-        font-size: 40%;
-      }
-
-      input.query {
-        width: 8rem;
-      }
-
-      .rhyme-list a {
-        padding: 0 0.125rem;
-      }
-      .rhyme-list a.current {
-        font-weight: 600;
-      }
-
-      .result-item {
-        padding: 0.7rem 0;
-      }
-      .result-item p {
-        margin: 0.3rem 0;
-      }
-      .result-item .headword {
-        font-size: 2rem;
-        line-height: 0;
-        margin-right: 0.5rem;
-      }
-      .result-item .headword-note {
-        font-size: 0.75rem;
-      }
-      .result-item .pronunciation {
-        margin-left: 0.5rem;
+      a.headword:hover {
+        color: var(--link-color);
       }
       .tupa {
         font-style: italic;
+      }
+
+      .beta-note {
+        font-size: 0.5em;
+        margin-left: 0.25em;
+      }
+
+      .query-form {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+      }
+      input, select {
+        font-size: 1rem;
+      }
+      input.query {
+        width: 6rem;
+      }
+      input.submit-button {
+        margin-right: 0.5rem;
+      }
+      .variant-option {
+        display: flex;
+        flex-wrap: wrap;
+        row-gap: 0.25rem;
+      }
+
+      .rhyme-list p {
+        margin: 0.5rem 0;
+        display: flex;
+      }
+      .rhyme-list p .heading {
+        white-space: nowrap;
+      }
+      .rhyme-list a {
+        padding: 0 0.125rem;
+      }
+      .rhyme-list a:not([href]) {
+        font-weight: 600;
+      }
+
+      .result > p {
+        margin: 0;
+      }
+      .result > ul {
+        list-style: none;
+        padding-left: 0;
+        margin: 0;
+      }
+      .result-item {
+        padding: 0.7rem 0;
+      }
+      .result-item > p {
+        margin: 0.3rem 0 0;
+      }
+      .result-item > p:first-child,
+      .result-item > p.note + p.headword-note {
+        margin: 0;
+      }
+      .result-item .headword {
+        font-size: 2rem;
+        line-height: 1;
+      }
+      .result-item .headword ~ * {
+        display: inline-block;
+      }
+      .result-item .headword + .spacing {
+        word-spacing: 0.125rem;
+      }
+      .result-item .pronunciation + .spacing {
+        word-spacing: 0.15rem;
+      }
+      .result-item .tupa + .spacing {
+        word-spacing: 0.25rem;
+      }
+      .result-item .headword-note {
+        font-size: 0.875rem;
+        color: var(--headword-note-color);
+      }
+      .result-item .cite {
+        word-spacing: 0.125rem;
+      }
+      .result-item .cite a:not([href]) {
+        color: var(--link-hover-color);
       }
     </style>
   </head>
