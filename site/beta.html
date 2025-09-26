@@ -314,7 +314,9 @@
       </form>
       <rhyme-list ref="rhymeList" @query="doQuery"></rhyme-list>
       <div class="result">
-        <p v-if="!activeQuery">（請輸入要查詢的<strong>單個</strong>字並點擊「查詢」，或點擊《廣韻》卷目以瀏覽《廣韻》小韻）</p>
+        <p v-if="!activeQuery">
+          （請輸入要查詢的<strong>單個</strong>字並點擊「查詢」，或點擊《廣韻》卷目以瀏覽《廣韻》小韻）
+        </p>
         <p v-else-if="result.length">
           <template v-if="is小韻query">小韻轄字</template>
           <template v-else>查詢結果</template>（{{result.length}} 條）：
