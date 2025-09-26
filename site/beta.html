@@ -325,7 +325,8 @@
         </p>
         <ul>
           <li v-for="條目 in result" :key="keyForEntry(條目)">
-            <result-entry :條目 :is小韻query :href-for字 @query="doQuery"></result-entry>
+            <!-- NOTE Same-name shorthands in in-DOM templates are broken in Vue v3.5.22. Working around. -->
+            <result-entry v-bind="{ 條目, is小韻query, hrefFor字 }" @query="doQuery"></result-entry>
           </li>
         </ul>
       </div>
