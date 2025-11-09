@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width" />
     <title>切韻音系字音查詢</title>
     <script type="module">
-      import TshetUinh from 'https://cdn.jsdelivr.net/npm/tshet-uinh@0.16.0-beta.5/dist/tshet-uinh.esm.min.js';
+      import * as TshetUinh from 'https://cdn.jsdelivr.net/npm/tshet-uinh@0.16.0-beta.6/dist/tshet-uinh.esm.min.js';
       import {
         computed,
         createApp,
@@ -254,14 +254,12 @@
               }
             } else {
               rhymeList.value.select(null);
-              const rawResult = TshetUinh.資料.query字頭(query);
-              const variantResult = [];
-              if (queryVariants === 'yes' || (queryVariants === 'fallback' && !rawResult.length)) {
-                for (const 字 of Yitizi.get(query)) {
-                  variantResult.push(...TshetUinh.資料.query字頭(字));
-                }
+              if (queryVariants === 'no' || queryVariants === 'fallback') {
+                result.value = TshetUinh.資料.query字頭(query);
               }
-              result.value = expandAndSortEntries(rawResult, variantResult);
+              if (queryVariants === 'yes' || (queryVariants === 'fallback' && !result.value.length)) {
+                result.value = TshetUinh.資料.query字頭(query, Yitizi.get(query));
+              }
             }
           }
 
