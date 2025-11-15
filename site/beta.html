@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width" />
     <title>切韻音系字音查詢</title>
     <script type="module">
-      import * as TshetUinh from 'https://cdn.jsdelivr.net/npm/tshet-uinh@0.16.0-beta.6/dist/tshet-uinh.esm.min.js';
+      import * as TshetUinh from 'https://cdn.jsdelivr.net/npm/tshet-uinh@0.16.0-beta.7/dist/tshet-uinh.esm.min.js';
       import {
         computed,
         createApp,
@@ -65,7 +65,7 @@
         return `${條目.來源}/${條目.小韻號}/${條目.小韻字號}`;
       }
       function 字頭校正或原貌(條目) {
-        return 條目 && (條目.字頭校正() ?? 條目.字頭原貌());
+        return 條目 && (條目.字頭校正 ?? 條目.字頭原貌);
       }
       function hrefFor小韻(原書小韻號) {
         return '?' + new URLSearchParams([['q', `@${原書小韻號}`]]).toString();
