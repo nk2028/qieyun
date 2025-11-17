@@ -347,7 +347,7 @@
           <span class="pronunciation tupa">{{ tupa }}</span>
           <span class="spacing">&nbsp;</span>
           <span v-if="條目.反切" class="pronunciation fanqie"
-          >{{ 條目.反切 ? (條目.反切 + (條目.來源 === '廣韻' ? '切' : '反')) : ''}}</span>
+          >{{條目.反切 + (條目.來源 === '廣韻' ? '切' : '反')}}</span>
           <span v-if="條目.直音" class="pronunciation zhiyin">音{{ 條目.直音 }}</span>
         </p>
         <p v-if="條目.釋義" class="note">{{ 條目.釋義 }}</p>
