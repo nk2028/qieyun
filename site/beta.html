@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width" />
     <title>切韻音系字音查詢</title>
     <script type="module">
-      import * as TshetUinh from 'https://cdn.jsdelivr.net/npm/tshet-uinh@0.16.0-beta.7/dist/tshet-uinh.esm.min.js';
+      import * as TshetUinh from 'https://cdn.jsdelivr.net/npm/tshet-uinh@0.16.0-beta.8/dist/tshet-uinh.esm.min.js';
       import {
         computed,
         createApp,
@@ -69,19 +69,6 @@
       }
       function hrefFor小韻(原書小韻號) {
         return '?' + new URLSearchParams([['q', `@${原書小韻號}`]]).toString();
-      }
-      function compareEntryOrder(條目1, 條目2) {
-        if (條目1.來源 !== 條目2.來源) {
-          return 條目1.來源 < 條目2.來源 ? -1 : 1;
-        }
-        const 原書小韻號1 = 條目1.原書小韻號;
-        const 原書小韻號2 = 條目2.原書小韻號;
-        if (原書小韻號1 !== 原書小韻號2) {
-          return 原書小韻號1 - 原書小韻號2;
-        }
-        const [原書字號1, 增字號1] = 條目1.小韻字號詳情();
-        const [原書字號2, 增字號2] = 條目2.小韻字號詳情();
-        return 原書字號1 !== 原書字號2 ? 原書字號1 - 原書字號2 : 增字號1 - 增字號2;
       }
 
       const ResultEntry = {
@@ -184,27 +171,6 @@
               params.set('var', variantOption.value);
             }
             return '?' + params.toString();
-          }
-
-          function expandEntries(各條目, filter = () => true) {
-            const unique = new Map();
-            for (const 條目 of 各條目) {
-              for (const 展開條目 of 條目.expand釋義上下文()) {
-                const key = keyForEntry(展開條目);
-                if (!unique.has(key) && filter(key, 條目)) {
-                  unique.set(key, 展開條目);
-                }
-              }
-            }
-            return unique;
-          }
-
-          function expandAndSortEntries(各條目, 異體各條目) {
-            const unique = expandEntries(各條目);
-            const sorted = [...unique.values()].sort(compareEntryOrder);
-            const uniqueVariants = expandEntries(異體各條目, key => !unique.has(key));
-            const sortedVariants = [...uniqueVariants.values()].sort(compareEntryOrder);
-            return [...sorted, ...sortedVariants];
           }
 
           function doQuery(query, queryVariants, noHistory = false) {
